@@ -1,0 +1,27 @@
+#repeat states
+not	0.98
+hyper_f	0.01
+hyper_r	0.01
+END
+#position states alpha
+#name	alpha_plus	alpha_minus	strand_same
+ref	10.0,0.01,0.01,0.01	10.0,0.01,0.01,0.01	1
+snp1	1.0,1.0,0.01,0.01	1.0,1.0,0.01,0.01	1
+snp2	1.0,0.01,1.0,0.01	1.0,0.01,1.0,0.01	1
+snp3	1.0,0.01,0.01,1.0	10.0,0.01,0.01,0.01	1
+edit_f	1.0,0.01,1.0,0.01	10.0,0.01,0.01,0.01	0
+edit_r	10.0,0.01,0.01,0.01	1.0,0.01,1.0,0.01	0
+END
+#position states probability (0 if not specified)
+#pos_names	TE_names	bases	prob
+ref	hyper_f	0	0.495
+ref	hyper_f	1,2,3	0.99
+ref	hyper_r	0,1,2	0.99
+ref	hyper_r	3	0.495
+ref	not	0,1,2,3	0.99
+snp1,snp3	hyper_f,hyper_r,not	0,1,2,3	0.0025
+snp2	hyper_f,hyper_r,not	0,1,2,3	0.005
+edit_f	hyper_f	0	0.495
+edit_r	hyper_r	3	0.495
+ref	hyper_f,hyper_r,not	4	1.0
+END
