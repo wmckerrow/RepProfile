@@ -17,7 +17,7 @@ bwa
 samtools
 
 ## QuickStart Example
-To make sure that RepProfile is working, align the QuickStart example as follows. Edit the first three lines of make_candidate_alignments.sh to use your own read data and reference. RepProfile is not fast enough for genomewide alignment, so use a reference that only includes one repeat type along with flanking sequence that excedes that length of almost all fragments. See manual.md for details about how to generate this.
+To make sure that RepProfile is working, align the QuickStart example as follows. Edit the first three lines of make_candidate_alignments.sh to use your own read data and reference. RepProfile is not fast enough for genomewide alignment, so use a reference that only includes one repeat type along with flanking sequence that excedes that length of almost all fragments. See below.
 
 ```bash
 utilities/make_candidate_alignments.sh 
@@ -44,8 +44,6 @@ You can clean up with:
 rm alignments_*.pkl alignments_list.txt candidates.masked.aln.bam expU_f.pkl expU_r.pkl f_prob.pkl pos_type.pkl rep_type.pkl r_prob.pkl genome_profile_f.pkl genome_profile_initial.pkl genome_profile_r.pkl
 ```
 
-More detailed information regarding how to run RepProfile can be found in manual.md.
-
 ## Generate repeat genome and reads
 Given a named repeat, a bed file with repeats (can be generated on the UCSC genome table browser,) and a reference genome, you can generate a repeat genome as follows:
 ```bash
@@ -59,6 +57,9 @@ python utilities/make_repeat_fastq.py -l repeat_read_ids.txt -g illumina_reads_R
 ```
 
 If you are looking for hyper editing, utilities/make_candidate_alignments_genomic.sh will automatically build a repeat genome, find repeat reads, and build candidate alignments. Edit the first four lines appropriately.
+
+## More details
+More information about how to run RepProfile can be found in manual (manual.md).
 
 ## Contact
 Questions? email Will McKerrow: wilson_mckerrow@brown.edu.
