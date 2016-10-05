@@ -17,10 +17,13 @@ bwa
 samtools
 
 # Quick Start
-To get started quickly, align the QuickStart example as follows. Edit the first three lines of make_candidate_alignments.sh to use your own read data and reference. RepProfile is not fast enough for genomewide alignment, so use a reference that only includes one repeat type along with flanking sequence that excedes that length of almost all fragments.
+To get started quickly, align the QuickStart example as follows. Edit the first three lines of make_candidate_alignments.sh to use your own read data and reference. RepProfile is not fast enough for genomewide alignment, so use a reference that only includes one repeat type along with flanking sequence that excedes that length of almost all fragments. See manual.md for details.
+
+```bash
 utilities/make_candidate_alignments.sh 
 python main/parse_PEbam_for_RepProfile.py -b candidates.masked.aln.bam -r QuickStart/reads_R1.fastq,QuickStart/reads_R2.fastq -g QuickStart/someFB.fa -m 4
 python main/RepProfile.py -a alignments_list.txt -r QuickStart/someFB.fa -p QuickStart/HyperEditingPrior.txt -n 5
+```
 
 You can generate a bam file for the alignment:
 samtools view -H candidates.masked.aln.bam > QS.sam
