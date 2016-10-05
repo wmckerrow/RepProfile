@@ -26,16 +26,22 @@ python main/RepProfile.py -a alignments_list.txt -r QuickStart/someFB.fa -p Quic
 ```
 
 You can generate a bam file for the alignment:
+```bash
 samtools view -H candidates.masked.aln.bam > QS.sam
 python utilities/write_sam.py >> QS.sam
 samtools view -bS QS.sam | samtools sort - -o QS.bam
 rm QS.sam
+```
 
 Or report sequences/positions predicted to be hyper-edited:
+```bash
 python utilities/report.py -r hyper_f,hyper_r
 python utilities/report.py -p edit_f,edit_r
+```
 
 You can clean up with:
+```bash
 rm alignments_*.pkl alignments_list.txt candidates.masked.aln.bam expU_f.pkl expU_r.pkl f_prob.pkl pos_type.pkl rep_type.pkl r_prob.pkl genome_profile_f.pkl genome_profile_initial.pkl genome_profile_r.pkl
+```
 
 More detailed information regarding how to run RepProfile can be found in manual.md.
