@@ -1,6 +1,6 @@
-export reads1=QuickStart/reads_R1.fastq
-export reads2=QuickStart/reads_R2.fastq
-export ref=QuickStart/someFB.fa
+export reads1=QuickStart/reads_R1.fastq #Reads that (might) align to the repeat of interest. See manual.md for details.
+export reads2=QuickStart/reads_R2.fastq #Reads that (might) align to the repeat of interest.
+export ref=QuickStart/someFB.fa #Repeat genome. One fasta entry per repeat instance. Each entry should include the repeat sequence with (1kb) of flanking seqeunce upstream and downstream.
 
 python utilities/mask_fq.py $reads1 T C > $reads1.TCmasked
 python utilities/mask_fq.py $reads2 A G > $reads2.AGmasked

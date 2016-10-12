@@ -21,6 +21,11 @@ def GetArgs():
 							required=False,
 							default=None,
 							help='List of position types to report - comma separated. (None)')
+		parser.add_argument('-n', '--report_base_prob_at_pos_types',
+							type=str,
+							required=False,
+							default=None,
+							help='Report fraction of these bases at corresponding position types. Separate sets of bases to report for each reported position type by comma. For example -p edit_f,edit_r -n G,C would report that fraction G at forward edited sites and the fraction C at reversed edited sites. (None)')
 		parser.add_argument('-R', '--rep_type_pickle',
 							type=str,
 							required=False,
@@ -31,17 +36,37 @@ def GetArgs():
 							required=False,
 							default='pos_type.pkl',
 							help='Position types saved as pickle by RepProfile. (pos_type.pkl)')
+		parser.add_argument('-G', '--genome_profile_pickles',
+							type=str,
+							required=False,
+							default='genome_profile_f.pkl,genome_profile_r.pkl',
+							help='Genome profiles pickle files. Forward and reverse comma separated. (genome_profile_f.pkl,genome_profile_r.pkl)')
+		parser.add_argument('-g', '--genomic_positions',
+							type=str,
+							required=False,
+							default=None,
+							help='If the repeat fasta built by make_repeat_genome.py is provided, locations will be reported in genomic coordinates (1-based). (None)')
+		parser.add_argument('-f', '--flanking',
+							type=int,
+							required=False,
+							default=1000,
+							help='Amount of flanking sequence used. (1000)')
 		return parser.parse_args()
 
 	parser = argparse.ArgumentParser()
 	args = ParseArgs(parser)
 
-	return args.pos_type_pickle, args.rep_type_pickle, args.report_rep_types, args.report_pos_types
+	return args.pos_type_pickle, args.rep_type_pickle, args.genome_profile_pickles, args.report_rep_types, args.report_pos_types, args.report_base_prob_at_pos_types, args.flanking, args.genomic_positions
 	
 def main():
-	pos_type_pickle, rep_type_pickle, report_rep_types, report_pos_types = GetArgs()
+	pos_type_pickle, rep_type_pickle, genome_profile_pickles, report_rep_types, report_pos_types,report_base_prob_at_pos_types, flanking, genomic_positions = GetArgs()
+	
+	nuc2num = {'A':0, 'C':1, 'G':2, 'T':3,'a':0, 'c':1, 'g':2, 't':3}
 	
 	print pos_type_pickle, rep_type_pickle, report_rep_types, report_pos_types
+	
+	genome_profile_f = pickle.load(open(genome_profile_pickles.split(',')[0],'rb'))
+	genome_profile_r = pickle.load(open(genome_profile_pickles.split(',')[1],'rb'))
 	
 	if report_rep_types:
 		rep_types = pickle.load(open(rep_type_pickle,'rb'))
@@ -49,14 +74,34 @@ def main():
 			if rep_types[seq] in report_rep_types.split(','):
 				print seq, rep_types[seq]
 				
+	if genomic_positions:
+		genomic_positions_dict = dict()
+		for line in open(genomic_positions,'r'):
+			if line[0] == '>':
+				name = line.strip().split(' ')[0][1:]
+				genoChrom = line.strip().split(' ')[1].split(':')[0]
+				genoStart = int(line.strip().split(' ')[1].split(':')[1].split('-')[0])
+				genoEnd = int(line.strip().split(' ')[1].split(':')[1].split('-')[0])
+				genomic_positions_dict[name] = (genoChrom,genoStart,genoEnd)
+	
 	if report_pos_types:
 		pos_types = pickle.load(open(pos_type_pickle,'rb'))
 		for seq in pos_types:
 			if pos_types[seq] == None:
 				continue
 			for i in range(len(pos_types[seq])):
-				if pos_types[seq][i] in report_pos_types.split(','):
-					print seq, i, pos_types[seq][i]
+				for j in range(len(report_pos_types.split(','))):
+					if pos_types[seq][i] == report_pos_types.split(',')[j]:
+						if report_base_prob_at_pos_types:
+							if genomic_positions:
+								print genomic_positions_dict[seq][0], genomic_positions_dict[seq][1]+1+i+flanking, pos_types[seq][i], ' '.join([str(genome_profile_f[seq][i+flanking][nuc2num[x]]) for x in report_base_prob_at_pos_types.split(',')[j]])
+							else:
+								print seq, i+flanking, pos_types[seq][i], ' '.join([str(genome_profile_f[seq][i+flanking][nuc2num[x]]) for x in report_base_prob_at_pos_types.split(',')[j]])
+						else:
+							if genomic_positions:
+								print genomic_positions_dict[seq][0], genomic_positions_dict[seq][1]+1+i+flanking, pos_types[seq][i]
+							else:
+								print seq, i+flanking, pos_types[seq][i]
 
 
 if __name__ == '__main__':

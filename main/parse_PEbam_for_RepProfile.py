@@ -194,7 +194,7 @@ def GetArgs():
 							required=False,
 							default=30,
 							type=int,
-							help='Remove reads if any base is below the quality cutoff.')
+							help='Remove reads if mean base quality is below cutoff.')
 		return parser.parse_args()
 
 	parser = argparse.ArgumentParser()
@@ -230,7 +230,7 @@ def Main():
 			continue
 		if 'N' in str((readfq1,readfq2)[read.is_read2][read.qname].seq).upper():
 			continue
-		if min(read.query_qualities) < qcutoff:
+		if numpy.mean(read.query_qualities) < qcutoff:
 			continue
 			
 		if not read_id:

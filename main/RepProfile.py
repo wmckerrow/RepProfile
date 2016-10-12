@@ -520,13 +520,13 @@ def main():
 	pickle.dump(rep_type,open('rep_type.pkl','wb'))
 	pickle.dump(pos_type,open('pos_type.pkl','wb'))
 		
-	orig_rep_type = rep_type
+	rep_type_last_rotation = copy.copy(rep_type)
 		
 	while flipped:
 		flipped = False
 		
 		print 'Try flipping these off:'
-		print numpy.append( numpy.array(rep_type.keys())[numpy.array(rep_type.values()) == 'hyper_f'], numpy.array(rep_type.keys())[numpy.array(rep_type.values()) == 'hyper_r'] )
+		print  numpy.array(rep_type.keys())[numpy.array(rep_type.values()) == 'hyper_f'], numpy.array(rep_type.keys())[numpy.array(rep_type.values()) == 'hyper_r']
 		
 		for flipseq in numpy.append( numpy.array(rep_type.keys())[numpy.array(rep_type.values()) == 'hyper_f'], numpy.array(rep_type.keys())[numpy.array(rep_type.values()) == 'hyper_r'] ):
 			
@@ -556,7 +556,7 @@ def main():
 							genome_profile_r[seq][i,3] = (genome_profile_r[seq][i,3]+genome_profile_r[seq][i,1])/2
 							genome_profile_r[seq][i,1] = genome_profile_r[seq][i,3]
 						
-			genome_profile_f,genome_profile_r,f_prob,r_prob,rep_type,pos_type,expU_f,expU_r,ll_prev = nEMsteps(master_pool,jumpSteps,alignment_pickles,reference,genome_profile_f,genome_profile_r,f_prob,r_prob,genome_profile_initial,prior,flanking,threads)
+			genome_profile_f,genome_profile_r,f_prob,r_prob,rep_type,pos_type,expU_f,expU_r,ll = nEMsteps(master_pool,jumpSteps,alignment_pickles,reference,genome_profile_f,genome_profile_r,f_prob,r_prob,genome_profile_initial,prior,flanking,threads)
 			
 			print last_ll, ll, last_rep_type[flipseq] != rep_type[flipseq]
 			
@@ -569,10 +569,8 @@ def main():
 				pos_type = last_pos_type
 				ll = last_ll
 			elif last_rep_type[flipseq] != rep_type[flipseq]:
-				flipped = True
 				print 'Flipped', flipseq, 'off'
-				genome_profile_f,genome_profile_r,f_prob,r_prob,rep_type,pos_type,expU_f,expU_r,ll = nEMsteps(master_pool,jumpSteps,alignment_pickles,reference,genome_profile_f,genome_profile_r,f_prob,r_prob,genome_profile_initial,prior,flanking,threads)
-		
+						
 		pickle.dump(genome_profile_f,open('genome_profile_f.pkl','wb'))
 		pickle.dump(genome_profile_r,open('genome_profile_r.pkl','wb'))
 		pickle.dump(expU_f,open('expU_f.pkl','wb'))
@@ -581,6 +579,13 @@ def main():
 		pickle.dump(r_prob,open('r_prob.pkl','wb'))
 		pickle.dump(rep_type,open('rep_type.pkl','wb'))
 		pickle.dump(pos_type,open('pos_type.pkl','wb'))
+		
+		#print rep_type
+		#print rep_type_last_rotation
+		for seq in rep_type:
+			if rep_type[seq] != rep_type_last_rotation[seq]:
+				flipped=True
+		rep_type_last_rotation = copy.copy(rep_type)
 	
 	if jumpSteps > 0:
 		genome_profile_f,genome_profile_r,f_prob,r_prob,rep_type,pos_type,expU_f,expU_r,ll = nEMsteps(master_pool,numEM,alignment_pickles,reference,genome_profile_f,genome_profile_r,f_prob,r_prob,genome_profile_initial,prior,flanking,threads)

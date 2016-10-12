@@ -1,6 +1,7 @@
 import sys
+import gzip
 
-file = open(sys.argv[1],'r')
+file = gzip.open(sys.argv[1],'r')
 mask_from = sys.argv[2]
 mask_to = sys.argv[3]
 
@@ -19,3 +20,5 @@ while True:
 	print newseq
 	print file.readline().strip()
 	print file.readline().strip()
+	
+file.close()

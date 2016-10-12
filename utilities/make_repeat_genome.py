@@ -64,7 +64,7 @@ def GetArgs():
 		parser.add_argument('-r', '--repeat_name',
 							type=str,
 							required=False,
-							default=None
+							default=None,
 							help='Only build a genome from repeats that match this name.')
 		parser.add_argument('-f', '--flanking',
 							required=False,
@@ -98,11 +98,11 @@ def Main():
 		if repeat_name and repeat_name != repeat.repName:
 			continue
 		if not repeat.genoName in intervals:
-			intervals[repeat.genoName] = [(repeat.genoStart-FLANKING,repeat.genoEnd+FLANKING)]
+			intervals[repeat.genoName] = [(repeat.genoStart-flanking,repeat.genoEnd+flanking)]
 			continue
 		overlaps = []
-		new_start = repeat.genoStart-FLANKING
-		new_end = repeat.genoEnd+FLANKING
+		new_start = repeat.genoStart-flanking
+		new_end = repeat.genoEnd+flanking
 		for i in range(len(intervals[repeat.genoName])):
 			if new_start < intervals[repeat.genoName][i][1] and new_end > intervals[repeat.genoName][i][0]:
 				overlaps.append(i)
