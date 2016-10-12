@@ -62,7 +62,7 @@ will generate a fasta with one record for each instance of FB4_DM together with 
 ##Collecting repeat reads
 
 ##Candidate alignment bam
-As RepProfile does compute a sum across all alignments, it needs a set of candidate alignments as input. This alignments should be in bam format. The bam must by sorted by name. Alternate alignments can be either given as XA tags or as new lines. The script utilities/make_candidate_alignments.sh will use bwa to create a candidate alignment bam that includes alignments with any number of A to G changes but at most four non A to G mismatches. The first three lines of the script specify the fastq and fasta files to align.
+As RepProfile does compute a sum across all alignments, it needs a set of candidate alignments as input. These alignments should be in bam format. The bam must by sorted by name. Alternate alignments can be either given as XA tags or as new lines. The script utilities/make_candidate_alignments.sh will use bwa to create a candidate alignment bam that includes alignments with any number of A to G changes but at most four non A to G mismatches. The first three lines of the script specify the fastq and fasta files to align.
 
 ##Parsing the candidate bam file
 Before a profile can be estimated, the bam file is parsed and the alignments are split into pickle files. Only alignments that are concordant and overlap part of the repeat (not the flanking) are retained. Reads with no such alignments are discarded. The bam parsing is done by main/parse_PEbam_for_RepProfile.py. For example:
@@ -74,11 +74,12 @@ python main/parse_PEbam_for_RepProfile.py -b candidates.masked.aln.bam -r QuickS
 - -r QuickStart/reads_R1.fastq,QuickStart/reads_R2.fastq points toward fastq files containing the reads. The paired end reads should appear in two files and their names should be seperated by a comma.
 - -g QuickStart/someFB.fa points toward the repeat genome.
 - -m 4 means that any read with more than 4 non A to G mismatches will be thrown out.
+
 The following optional arguments can be specified:
 - (-p/--prefix) By default candidate alignments are written to alignments_0.pkl,...,alignments_n.pkl. You can specify a prefix to replace "alignments."
 - (-k/--flanking) Fragments that lie entirely within the flanking sequence are skipped. By default the first and last 1000 bases of each sequence are assumed be flanking. Another number can be specified here.
 - (-n/--reads_per_pickle) To control memory usage, the reads are split into different files that are read one at a time by each core. By default each file contains 5000 reads. This number can be changed here. If you are using multiple threads in RepProfile.py, make sure that you have more alignment pickles than threads.
-- (-q/--qcutoff) By default only reads that have base call quality at least 30 at each position are considered. If your dataset has few reads at this stringent quality level, you may wish to decrease this number. However RepProfile does not use base call quality in estimate alignment probability, so it is recommended that you use some cutoff.
+- (-q/--qcutoff) By default only reads that have mean base call quality at least 30 are considered.
 
 ##Running RepProfile
 The actual profile estimation is done by main/RepProfile.py. It can be executed as follows:
@@ -89,11 +90,15 @@ python main/RepProfile.py -a alignments_list.txt -r QuickStart/someFB.fa -p Quic
 - -r QuickStart/someFB.fa points to the reference genome.
 - -p QuickStart/HyperEditingPrior.txt points to a file that specifies the prior distribution. The provided prior QuickStart/HyperEditingPrior.txt is for estimating hyper-editing and is the prior used in our paper.
 - -n 5 specifies that 5 EM steps should be taken.
+
 The following additional options can also be used:
-- (-j/--jumps) If an integer > 0 is specified, RepProfile will try to find a better profile by decreasing the number of hyper edited TEs and then taking the specified number of EM steps. Only compatible with the hyper editing prior. See section ref{jumping} for more details.
+- (-j/--jumps) If an integer > 0 is specified, RepProfile will try to find a better profile by decreasing the number of hyper edited TEs and then taking the specified number of EM steps. Only compatible with the hyper editing prior.
 - (-c/--coverage) You can specify an initial guess for expression levels. Looks for two files separated by a comma. One for the forward strand and one for the reverse. For example:
 -c plus_cov.txt,minus_cov.txt 
+
 where plus_cov.txt and minus_cov.txt are tab delimited files in which the first column is the name of a repeat and the second column is a relative expression level. If a repeat is not listed a value of 1.0 is used.
+
+Further arguments that can be specified are:
 - (-i/--intial_guess) Specify an initial guess. This should point to four pickle files separated by commas. For example
 -i genome_profile_f.pkl,genome_profile_r.pkl,f_prob.pkl,r_prob.pkl
 will use the profile learned in the last run of RepProfile as the initial guess when running EM. genome_profile_f.pkl and genome_profile_r.pkl should be python dictionaries in which the keys are the names of the repeats and the values are nx4 numpy arrays, where n is the length of the repeat. The (i,j) entry should be the probability of nucleotide j and position i, where A=0,C=1,G=2, T=3 and N=4. f_prob.pkl and r_prob.pkl should be dictionaries, in which the keys are the names of repeats and the values are the probability that a random read in the +/- orientation comes from that repeat.
@@ -124,6 +129,26 @@ python utilities/report.py -p edit_f,edit_r,SNP1,SNP2,SNP3
 ```
 will report positions that are edited on the forward strand (edit_f), edited on the reverse strand (edit_r) or SNPs (SNP1,SNP2,SNP3). Three SNP states are used the cover the three possible types of bialellic SNPs.
 
+You can also report the probability of certain bases. For example
+```bash
+python utilities/report.py -p edit_f,edit_r -n G,C
+```
+will report any position that is estimated to be along with the fraction of editing that is predicted.
+```bash
+python utilities/report.py -p SNP1,SNP2,SNP3 -n ACGT,ACGT
+```
+will report any SNP positions along with the profile at those positions.
+
+make_repeat_genome.fa will save the genomic coordinates of repeats in the fasta file. You can use this information to report the genomic coordinates of predictions:
+- (-g/--genomic_positions) will point toward a repeat reference fasta file to draw genomic coordinates from.
+
+By default, report.py reads from the default RepProfile output file in the current working directory. You can specify other files to read from:
+- (-R/--rep_type_pickle) Will point to the pickle file to read repeat states from.
+- (-P/--pos_type_pickle) Will point to the pickle file to read position states from.
+- (-G/-genome_profile_pickles) Will point to the pickle files (comma separated) specifying forward and reverse genome profiles.
+
+Furthermore, if you are not using 1000 base pairs of flanking sequence you will need to include that with (-f/--flanking)
+
 ##The prior
 RepProfile uses a three tiered prior. At the top level, each repeat has a repeat state. At the second level, each position has a position state. The probability that a position is in a given state depends on the state of the repeat that that position is in. Finally each position state specifies a Dirichlet distribution. The bottom tier is the profile which is drawn from that Dirichlet distribution.
 
@@ -134,6 +159,7 @@ not	0.98
 specifies that there is a repeat state "not" and that each repeat has as 98% chance of being in that state. Each repeat state must be listed exactly once and the probabilities should add up to 1.
 
 The second set of lines have four fields and specify the position states:
+
 1. The name of the state
 2. The Dirichlet parameters for the prior for reads oriented in the + direction. The parameter vector is mod the reference base. Thus if 10.0,0.01,0.01,0.01 is specified, the profile will be drawn from Dirichlet(10.0,0.01,0.01,0.01) if the reference is A, but Dirichlet(0.01,0.01,0.01,10.0) if the reference is T.
 3. The Dirichlet parameters for the prior for reads oriented in the - direction.
