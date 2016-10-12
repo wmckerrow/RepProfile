@@ -90,13 +90,13 @@ python main/RepProfile.py -a alignments_list.txt -r QuickStart/someFB.fa -p Quic
 - -p QuickStart/HyperEditingPrior.txt points to a file that specifies the prior distribution. The provided prior QuickStart/HyperEditingPrior.txt is for estimating hyper-editing and is the prior used in our paper.
 - -n 5 specifies that 5 EM steps should be taken.
 The following additional options can also be used:
-- (-j/--jumps) If an integer $> 0$ is specified, RepProfile will try to find a better profile by decreasing the number of hyper edited TEs and then taking the specified number of EM steps. Only compatible with the hyper editing prior. See section ref{jumping} for more details.
+- (-j/--jumps) If an integer > 0 is specified, RepProfile will try to find a better profile by decreasing the number of hyper edited TEs and then taking the specified number of EM steps. Only compatible with the hyper editing prior. See section ref{jumping} for more details.
 - (-c/--coverage) You can specify an initial guess for expression levels. Looks for two files separated by a comma. One for the forward strand and one for the reverse. For example:
 -c plus_cov.txt,minus_cov.txt 
 where plus_cov.txt and minus_cov.txt are tab delimited files in which the first column is the name of a repeat and the second column is a relative expression level. If a repeat is not listed a value of 1.0 is used.
 - (-i/--intial_guess) Specify an initial guess. This should point to four pickle files separated by commas. For example
 -i genome_profile_f.pkl,genome_profile_r.pkl,f_prob.pkl,r_prob.pkl
-will use the profile learned in the last run of RepProfile as the initial guess when running EM. genome_profile_f.pkl and genome_profile_r.pkl should be python dictionaries in which the keys are the names of the repeats and the values are nx4 numpy arrays, where n is the length of the repeat. The $(i,j)$ entry should be the probability of nucleotide $j$ and position $i$, where A=0,C=1,G=2, T=3 and N=4. f_prob.pkl and r_prob.pkl should be dictionaries, in which the keys are the names of repeats and the values are the probability that a random read in the +/- orientation comes from that repeat.
+will use the profile learned in the last run of RepProfile as the initial guess when running EM. genome_profile_f.pkl and genome_profile_r.pkl should be python dictionaries in which the keys are the names of the repeats and the values are nx4 numpy arrays, where n is the length of the repeat. The (i,j) entry should be the probability of nucleotide j and position i, where A=0,C=1,G=2, T=3 and N=4. f_prob.pkl and r_prob.pkl should be dictionaries, in which the keys are the names of repeats and the values are the probability that a random read in the +/- orientation comes from that repeat.
 - (-k/--flanking) The default amount of flanking is 1000 nucleotides. If you are using a different amount of flanking specify it here.
 - (-t/--threads) RepProfile uses 8 cores by default. Another number can be specified here.
 
@@ -135,15 +135,15 @@ specifies that there is a repeat state "not" and that each repeat has as 98% cha
 
 The second set of lines have four fields and specify the position states:
 1. The name of the state
-2. The Dirichlet parameters for the prior for reads oriented in the + direction. The parameter vector is mod the reference base. Thus if 10.0,0.01,0.01,0.01 is specified, the profile will be drawn from Dirichlet(10.0,0.01,0.01,0.01)$ if the reference is A, but Dirichlet(0.01,0.01,0.01,10.0)$ if the reference is T.
+2. The Dirichlet parameters for the prior for reads oriented in the + direction. The parameter vector is mod the reference base. Thus if 10.0,0.01,0.01,0.01 is specified, the profile will be drawn from Dirichlet(10.0,0.01,0.01,0.01) if the reference is A, but Dirichlet(0.01,0.01,0.01,10.0) if the reference is T.
 3. The Dirichlet parameters for the prior for reads oriented in the - direction.
 4. 1 if the + and - strand should have the same profile. 0 if not.
 end{enumerate}
 For example:
 ref	10.0,0.01,0.01,0.01	10.0,0.01,0.01,0.01	1
-specifies a state names "ref." A single profile drawn from $Dirichlet(10.0,0.01,0.01,0.01)$ describes reads oriented on the + or - strand. And
+specifies a state names "ref." A single profile drawn from Dirichlet(10.0,0.01,0.01,0.01) describes reads oriented on the + or - strand. And
 edit_f	1.0,0.01,1.0,0.01	10.0,0.01,0.01,0.01	0
-specifies a state "edit_f" for which one profile is drawn from $Dirichlet(1.0,0.01,1.0,0.01)$ and describes + oriented reads and another is drawn from $Dirichlet(10.0,0.01,0.01,0.01)$ to describe - oriented reads.
+specifies a state "edit_f" for which one profile is drawn from Dirichlet(1.0,0.01,1.0,0.01) and describes + oriented reads and another is drawn from Dirichlet(10.0,0.01,0.01,0.01) to describe - oriented reads.
 
 Each position state should appear on exactly one line.
 
