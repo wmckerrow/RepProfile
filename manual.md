@@ -150,12 +150,16 @@ By default, report.py reads from the default RepProfile output file in the curre
 Furthermore, if you are not using 1000 base pairs of flanking sequence you will need to include that with (-f/--flanking)
 
 ##The prior
+NB: The current prior assumes that the forward and reverse profiles are identical. Allowing different profiles at edited positions led to unwanted predictions when reads only align to one strand.
+
 RepProfile uses a three tiered prior. At the top level, each repeat has a repeat state. At the second level, each position has a position state. The probability that a position is in a given state depends on the state of the repeat that that position is in. Finally each position state specifies a Dirichlet distribution. The bottom tier is the profile which is drawn from that Dirichlet distribution.
 
 The prior is read from a text file that is divided into three parts. A single line "END" separate each of the parts. Lines beginning with # are ignored. See QuickStart/HyperEditingPrior.txt for an example.
 
-The set of lines specify the repeat states with two fields. The first names the state and the second specifies the probability of a repeat being in that state. For example
+The first set of lines specify the repeat states with two fields. The first names the state and the second specifies the probability of a repeat being in that state. For example
+```
 not	0.98
+```
 specifies that there is a repeat state "not" and that each repeat has as 98% chance of being in that state. Each repeat state must be listed exactly once and the probabilities should add up to 1.
 
 The second set of lines have four fields and specify the position states:
@@ -166,9 +170,13 @@ The second set of lines have four fields and specify the position states:
 4. 1 if the + and - strand should have the same profile. 0 if not.
 end{enumerate}
 For example:
+```
 ref	10.0,0.01,0.01,0.01	10.0,0.01,0.01,0.01	1
+```
 specifies a state names "ref." A single profile drawn from Dirichlet(10.0,0.01,0.01,0.01) describes reads oriented on the + or - strand. And
+```
 edit_f	1.0,0.01,1.0,0.01	10.0,0.01,0.01,0.01	0
+```
 specifies a state "edit_f" for which one profile is drawn from Dirichlet(1.0,0.01,1.0,0.01) and describes + oriented reads and another is drawn from Dirichlet(10.0,0.01,0.01,0.01) to describe - oriented reads.
 
 Each position state should appear on exactly one line.
