@@ -168,7 +168,7 @@ The second set of lines have four fields and specify the position states:
 2. The Dirichlet parameters for the prior for reads oriented in the + direction. The parameter vector is mod the reference base. Thus if 10.0,0.01,0.01,0.01 is specified, the profile will be drawn from Dirichlet(10.0,0.01,0.01,0.01) if the reference is A, but Dirichlet(0.01,0.01,0.01,10.0) if the reference is T.
 3. The Dirichlet parameters for the prior for reads oriented in the - direction.
 4. 1 if the + and - strand should have the same profile. 0 if not.
-end{enumerate}
+
 For example:
 ```
 ref	10.0,0.01,0.01,0.01	10.0,0.01,0.01,0.01	1
@@ -182,10 +182,12 @@ specifies a state "edit_f" for which one profile is drawn from Dirichlet(1.0,0.0
 Each position state should appear on exactly one line.
 
 Finally the third set of lines specifies the probability of each repeat state. The lines have four fields:
+
 1. The name of the position state(s)
 2. The name of the repeat state(s)
 3. A set of bases (A=0,C=1,G=2,T=3,N=4)
 4. The probability of being in each of the position states given one of the repeat states when the reference is one of the given bases.
+
 Combinations that are not specified have 0 probability. For example:
 ```
 ref	hyper_f	0	0.495
