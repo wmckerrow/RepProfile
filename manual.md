@@ -193,7 +193,9 @@ Combinations that are not specified have 0 probability. For example:
 ref	hyper_f	0	0.495
 ```
 says that if the repeat state is "hyper_f" and the reference base is "A" then there is a 0.495 probability of being in position state "ref."
+```
 snp1,snp3	hyper_f,hyper_r,not	0,1,2,3	0.0025
+```
 says that under any repeat state and any base, the probability of snp1 and snp3 are 0.0025.
 
 ##Jumping
