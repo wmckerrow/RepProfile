@@ -1,3 +1,24 @@
+"""
+
+Copyright Wilson McKerrow, 2017
+
+This file is part of RepProfile.
+
+RepProfile is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+RepProfile is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with RepProfile.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
+
 import pysam
 import argparse
 import pickle
@@ -7,14 +28,16 @@ import re
 from itertools import chain
 from sets import Set
 
-MAX_FRAG_SIZE = 1000
+MAX_FRAG_SIZE = 1000 # If read end alignments are within this distance, they are called concordant.
 
+# Return True if the alignments overlap
 def aln_overlap(aln1,aln2):
 	if aln1.chrom == aln2.chrom and min(aln1.aln_ref()) < max(aln2.aln_ref()) and min(aln2.aln_ref()) < max(aln1.aln_ref()):
 		return True
 	else:
 		return False
 
+# Candidate alignments and sequence for a single read end
 class readclass(object):
 	def __init__(self, read,rname_list,readfq):
 		self.seq = seq2array(str(readfq[read.qname].seq).upper())
@@ -34,6 +57,7 @@ class readclass(object):
 		self.aln += [new_aln]
 		return True
 		
+# A candidate alignment
 class alnclass(object):
 	def __init__(self,chrom,ref_start,cigarstring,forward):
 		self.chrom = chrom
@@ -44,6 +68,7 @@ class alnclass(object):
 	def aln_ref(self):
 		return numpy.array(list(chain.from_iterable([range(x[0],x[1]) for x in self.ref_ranges])))
 		
+# Sequence (seq1,seq2) and alignments (aln1,aln2) for a paired end read		
 class PEreadclass(object):
 	def __init__(self, read1,read2,aln1,aln2):
 		self.seq1 = read1.seq
@@ -57,7 +82,8 @@ class PEreadclass(object):
 		self.alns2.append( aln2 )
 	def addaln(self,i,j):
 		self.aln.append( (i,j) )
-		
+
+# Parse a cigar string alignment and output start and end for intervals that are aligned		
 def cigarstring_2_pairs(cigarstring,ref_start):
 	aln_read = []
 	aln_ref = []
@@ -118,28 +144,33 @@ def cigarstring_2_pairs(cigarstring,ref_start):
 				
 	return read_ranges,ref_ranges,insert_starts,insert_extends,del_starts,del_extends
 
+# Convert sequences from string to numpy array.
 def seq2array(seq):
 	nuc2num = {'A':0,'C':1,'G':2,'T':3, 'N':4}
 	return numpy.array([nuc2num[c] for c in seq],dtype=numpy.int8)
 
 
+# Convert sequences from numpy array to string.
 def array2seq(seq_array):
 	seq = ''
 	for letter in seq_array:
 		seq += 'ACGTN'[letter]
 	return seq
 
+# Store sequence in a fasta file a dictionary of numpy arrays
 def fasta_as_array(fasta_file):
 	fasta_dict = SeqIO.to_dict(SeqIO.parse(open(fasta_file,'r'), "fasta"))
 	for seq in fasta_dict:
 		fasta_dict[seq] = seq2array(fasta_dict[seq].upper())
 	return fasta_dict
 	
+# Check to see if the candidate alignment has few enough non A to G changes
 def check_alignments(read,ref,max_diff):
 	diffs = sum(read != ref)
 	edits = sum(numpy.logical_and(ref==0,read==2))
 	return diffs-edits <= max_diff
 
+# Number of A to G and non A to G changes
 def count_diffs(read,ref):
 	diffs = sum(read != ref)
 	edits = sum(numpy.logical_and(ref==0,read==2))
@@ -224,6 +255,7 @@ def Main():
 	alignments_list_file = open('alignments_list.txt','w')
 	
 	for read in bam:
+		# Throw out reads that are unmapped, clipped or low quality
 		if read.is_unmapped:
 			continue
 		if 'N' in read.cigarstring or 'S' in read.cigarstring or 'H' in read.cigarstring or 'P' in read.cigarstring or '=' in read.cigarstring or 'X' in read.cigarstring:
@@ -237,12 +269,13 @@ def Main():
 			read_id = read.qname
 			new_read_id1 = True
 			new_read_id2 = True
-			
-		if read_id != read.qname:
-			if not (new_read_id1 or new_read_id2):
+		
+		if read_id != read.qname: # Reads are name sort, so if we get to a qname, then we have read all bwa alignments for the previous read	
+			if not (new_read_id1 or new_read_id2): # Make sure we actually have candidate alignments for both read ends
 				accepted_read = None
 				kept1_pos = [-1]*len(read1.aln)
 				kept2_pos = [-1]*len(read2.aln)
+				# Check if each pairing of a candidate alignment from read end 1 and read end 2 is a concordant pairing. If it is, make sure that each of the read end alignments are saved and save their indices as a concordant pair.
 				for i in range(len(read1.aln)):
 					aln1 = read1.aln[i]
 					for j in range(len(read2.aln)):
@@ -266,6 +299,7 @@ def Main():
 								alns_kept += 1
 				if accepted_read:
 					reads[read_id] = accepted_read
+				# Dump all the alignments so far every so often to control memory usage.
 				if len(reads) >= reads_per_pickle:
 					pickle.dump(reads,open(prefix+'_'+str(pickle_num)+'.pkl','wb'))
 					alignments_list_file.write(prefix+'_'+str(pickle_num)+'.pkl\n')
@@ -278,6 +312,7 @@ def Main():
 			
 		read_count+=1
 		
+		# For each line in the bam file, check if the alignment has few enough non A to G changes.
 		candidate = readclass(read,rnames,(readfq1,readfq2)[read.is_read2])
 		if read.is_read2 and not read.is_reverse:
 			if check_alignments(candidate.seq[candidate.aln[0].aln_read()],reference[candidate.aln[0].chrom][candidate.aln[0].aln_ref()],max_diff):
@@ -313,7 +348,8 @@ def Main():
 				else:
 					read1.addaln(read,rnames)
 					alns_created += 1
-					
+		
+		# If there are additional alignments save as an 'XA' tag, check those as well			
 		if 'XA' in dict(read.tags):
 			for aln in [x.split(',') for x in dict(read.tags)['XA'].split(';')[:-1]]:
 				read_count+=1
@@ -362,6 +398,7 @@ def Main():
 								read1.addXAaln(aln)
 								alns_created += 1
 	
+	# At the end of the file we have read all alignments for the last read
 	if not (new_read_id1 or new_read_id2):
 		accepted_read = None
 		kept1_pos = [-1]*len(read1.aln)
@@ -390,6 +427,7 @@ def Main():
 		if accepted_read:
 			reads[read_id] = accepted_read
 	
+	# Save the remaining alignments
 	pickle.dump(reads,open(prefix+'_'+str(pickle_num)+'.pkl','wb'))
 	alignments_list_file.write(prefix+'_'+str(pickle_num)+'.pkl\n')
 	

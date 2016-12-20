@@ -1,3 +1,24 @@
+"""
+
+Copyright Wilson McKerrow, 2017
+
+This file is part of RepProfile.
+
+RepProfile is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+RepProfile is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with RepProfile.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
+
 import os
 import re
 import sys
@@ -51,11 +72,9 @@ def MakeHoppelBam(repeats,samfile,id,flanking):
 	# iterate through the sequences, then through the repeats
 	# for each Hoppel repeat, insert its sequence in the correct location
 	for repeat in repeats:
-		if id and id != repeat.repName:
+		if id and not id in repeat.repName:
 			continue
-		print repeat.genoName,max(repeat.genoStart-flanking,0),repeat.genoEnd+flanking
 		for read in samfile.fetch(repeat.genoName,max(repeat.genoStart-flanking,0),repeat.genoEnd+flanking):
-			print read.qname, 
 			if not read.qname in read_ids:
 				read_ids.add(read.qname)
 	

@@ -1,3 +1,24 @@
+"""
+
+Copyright Wilson McKerrow, 2017
+
+This file is part of RepProfile.
+
+RepProfile is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+RepProfile is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with RepProfile.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
+
 import pickle
 import sys
 import argparse
@@ -62,18 +83,10 @@ def main():
 	pos_type_pickle, rep_type_pickle, genome_profile_pickles, report_rep_types, report_pos_types,report_base_prob_at_pos_types, flanking, genomic_positions = GetArgs()
 	
 	nuc2num = {'A':0, 'C':1, 'G':2, 'T':3,'a':0, 'c':1, 'g':2, 't':3}
-	
-	print pos_type_pickle, rep_type_pickle, report_rep_types, report_pos_types
-	
+		
 	genome_profile_f = pickle.load(open(genome_profile_pickles.split(',')[0],'rb'))
 	genome_profile_r = pickle.load(open(genome_profile_pickles.split(',')[1],'rb'))
 	
-	if report_rep_types:
-		rep_types = pickle.load(open(rep_type_pickle,'rb'))
-		for seq in rep_types:
-			if rep_types[seq] in report_rep_types.split(','):
-				print seq, rep_types[seq]
-				
 	if genomic_positions:
 		genomic_positions_dict = dict()
 		for line in open(genomic_positions,'r'):
@@ -81,8 +94,17 @@ def main():
 				name = line.strip().split(' ')[0][1:]
 				genoChrom = line.strip().split(' ')[1].split(':')[0]
 				genoStart = int(line.strip().split(' ')[1].split(':')[1].split('-')[0])
-				genoEnd = int(line.strip().split(' ')[1].split(':')[1].split('-')[0])
+				genoEnd = int(line.strip().split(' ')[1].split(':')[1].split('-')[1])
 				genomic_positions_dict[name] = (genoChrom,genoStart,genoEnd)
+	
+	if report_rep_types:
+		rep_types = pickle.load(open(rep_type_pickle,'rb'))
+		for seq in rep_types:
+			if rep_types[seq] in report_rep_types.split(','):
+				if genomic_positions:
+					print seq, genomic_positions_dict[seq][0]+':'+str(genomic_positions_dict[seq][1]+1)+'-'+str(genomic_positions_dict[seq][2]+1), rep_types[seq]
+				else:
+					print seq, rep_types[seq]
 	
 	if report_pos_types:
 		pos_types = pickle.load(open(pos_type_pickle,'rb'))

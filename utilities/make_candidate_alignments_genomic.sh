@@ -1,18 +1,19 @@
 export reads1=/users/wmckerro/data/wmckerro/YAS_reads/PE_RNA_genewiz/4_GAATTCGT-GGCTCTGA_L002_R1_001.fastq.gz #Illumina reads. Gunzipped.
 export reads2=/users/wmckerro/data/wmckerro/YAS_reads/PE_RNA_genewiz/4_GAATTCGT-GGCTCTGA_L002_R2_001.fastq.gz #Illumina reads. Gunzipped.
 export ref=/users/wmckerro/data/wmckerro/dm6/dm6.fa #Reference genome.
-export repeatbed=dm6.reps.bed #List of repeat instances in bed format. Can download from UCSC genome table browser.
+export repeatbed=/users/wmckerro/data/wmckerro/fly_annotations/dm6.reps.bed #List of repeat instances in bed format. Can download from UCSC genome table browser.
 export repeatname=FB4_DM #Name of repeat to generate alignments for.
+export RepProfile=/users/wmckerro/RepProfile
 
-module load bwa
-module load samtools
+#module load bwa
+#module load samtools
 
-python utilities/make_repeat_genome.py -r $repeatname -f 1000 -m $repeatbed -g $ref > repeatgenome.fa
+python $RepProfile/utilities/make_repeat_genome.py -r $repeatname -f 1000 -m $repeatbed -g $ref > repeatgenome.fa
 
-python utilities/mask_fq_fromgz.py $reads1 T C > $reads1.TCmasked
-python utilities/mask_fq_fromgz.py $reads2 A G > $reads2.AGmasked
-python utilities/mask_fa.py $ref A G > $ref.AGmasked
-python utilities/mask_fa.py $ref T C > $ref.TCmasked
+python $RepProfile/utilities/mask_fq_fromgz.py $reads1 T C > $reads1.TCmasked
+python $RepProfile/utilities/mask_fq_fromgz.py $reads2 A G > $reads2.AGmasked
+python $RepProfile/utilities/mask_fa.py $ref A G > $ref.AGmasked
+python $RepProfile/utilities/mask_fa.py $ref T C > $ref.TCmasked
 bwa index $ref.AGmasked
 bwa index $ref.TCmasked
 bwa aln -t 8 -n 4 -l 25 -i 10 $ref.AGmasked $reads1.TCmasked >  AG.masked.R1.aln.sai
@@ -27,18 +28,23 @@ samtools merge -f masked.aln.unsort.bam AG.masked.aln.bam TC.masked.aln.bam
 samtools sort masked.aln.unsort.bam > masked.aln.bam
 samtools index masked.aln.bam
 
-python utilities/repeat_read_ids.py -r $repeatbed -b masked.aln.bam -i $repeatname > repeat_read_ids.txt
-python utilities/make_repeat_fastq.py -l repeat_read_ids.txt -g $reads1 > reads_R1.fastq
-python utilities/make_repeat_fastq.py -l repeat_read_ids.txt -g $reads2 > reads_R2.fastq
+rm $reads1.TCmasked $reads2.AGmasked
+rm AG.masked.R1.aln.sai AG.masked.R2.aln.sai AG.masked.aln.sam AG.masked.aln.bam
+rm TC.masked.R1.aln.sai TC.masked.R2.aln.sai TC.masked.aln.sam TC.masked.aln.bam
+rm masked.aln.unsort.bam
+
+python $RepProfile/utilities/repeat_read_ids.py -r $repeatbed -b masked.aln.bam -i $repeatname > repeat_read_ids.txt
+python $RepProfile/utilities/make_repeat_fastq.py -l repeat_read_ids.txt -g $reads1 > reads_R1.fastq
+python $RepProfile/utilities/make_repeat_fastq.py -l repeat_read_ids.txt -g $reads2 > reads_R2.fastq
 
 export reads1=reads_R1.fastq
 export reads2=reads_R2.fastq
 export ref=repeatgenome.fa
 
-python utilities/mask_fq.py $reads1 T C > $reads1.TCmasked
-python utilities/mask_fq.py $reads2 A G > $reads2.AGmasked
-python utilities/mask_fa.py $ref A G > $ref.AGmasked
-python utilities/mask_fa.py $ref T C > $ref.TCmasked
+python $RepProfile/utilities/mask_fq.py $reads1 T C > $reads1.TCmasked
+python $RepProfile/utilities/mask_fq.py $reads2 A G > $reads2.AGmasked
+python $RepProfile/utilities/mask_fa.py $ref A G > $ref.AGmasked
+python $RepProfile/utilities/mask_fa.py $ref T C > $ref.TCmasked
 bwa index $ref.AGmasked
 bwa index $ref.TCmasked
 bwa aln -t 8 -N -n 4 -l 25 -i 10 $ref.AGmasked $reads1.TCmasked >  candidates.AG.masked.R1.aln.sai
