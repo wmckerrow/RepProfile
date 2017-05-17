@@ -19,11 +19,18 @@ along with RepProfile.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+"""
+
+Print RepProfile results.
+
+"""
+
 import pickle
 import sys
 import argparse
 import numpy
 
+# Get command line arguments
 def GetArgs():
 
 	def ParseArgs(parser):
@@ -87,16 +94,23 @@ def main():
 	genome_profile_f = pickle.load(open(genome_profile_pickles.split(',')[0],'rb'))
 	genome_profile_r = pickle.load(open(genome_profile_pickles.split(',')[1],'rb'))
 	
+	# Convert from repeat genome coordinates to reference coordinates
 	if genomic_positions:
 		genomic_positions_dict = dict()
 		for line in open(genomic_positions,'r'):
 			if line[0] == '>':
 				name = line.strip().split(' ')[0][1:]
-				genoChrom = line.strip().split(' ')[1].split(':')[0]
-				genoStart = int(line.strip().split(' ')[1].split(':')[1].split('-')[0])
-				genoEnd = int(line.strip().split(' ')[1].split(':')[1].split('-')[1])
+				region = line.strip().split(' ')[1].split(':')
+				genoChrom = region[0]
+				if region[1][0] == '-':
+					genoStart = -int(region[1][1:].split('-')[0])
+					genoEnd = -int(region[1][1:].split('-')[1])
+				else:
+					genoStart = int(region[1].split('-')[0])
+					genoEnd = int(region[1].split('-')[1])
 				genomic_positions_dict[name] = (genoChrom,genoStart,genoEnd)
 	
+	# Print repeats that are in specified repeat types
 	if report_rep_types:
 		rep_types = pickle.load(open(rep_type_pickle,'rb'))
 		for seq in rep_types:
@@ -106,10 +120,11 @@ def main():
 				else:
 					print seq, rep_types[seq]
 	
+	# Print positions that are in specified position types, along with specified profile values at those positions.
 	if report_pos_types:
 		pos_types = pickle.load(open(pos_type_pickle,'rb'))
 		for seq in pos_types:
-			if pos_types[seq] == None:
+			if pos_types[seq] is None:
 				continue
 			for i in range(len(pos_types[seq])):
 				for j in range(len(report_pos_types.split(','))):

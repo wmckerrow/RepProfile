@@ -19,6 +19,12 @@ along with RepProfile.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+"""
+
+Save most likely alignment found by RepProfile as a sam file.
+
+"""
+
 import numpy
 from Bio import SeqIO
 import argparse
@@ -40,6 +46,7 @@ P_ERROR = 0.001 # Probability of a given sequencing error (e.g. A->C)
 P_OPEN = 0.001 # Probability of opening a new indel
 P_EXTEND = 0.1 # Probability of extending an indel
 
+# Sequence (seq) and candidate alignments (aln) for a single read end.
 class readclass(object):
 	def __init__(self, read,rname_list):
 		self.seq = seq2array(read.seq)
@@ -50,6 +57,7 @@ class readclass(object):
 	def addaln(self,XA):
 		self.aln += [alnclass(XA[0],int(XA[1][1:])-1,XA[2],XA[1][0]=='+')]
 		
+# A candidate alignment
 class alnclass(object):
 	def __init__(self,chrom,ref_start,cigarstring,forward):
 		self.chrom = chrom
@@ -68,6 +76,7 @@ class alnclass(object):
 		return result
 		#return numpy.array(list(chain.from_iterable([range(x[0],x[1]) for x in self.ref_ranges])))
 		
+# Sequence (seq1,seq2) and alignments (aln1,aln2) for a paired end read		
 class PEreadclass(object):
 	def __init__(self, read1,read2,aln1,aln2):
 		self.seq1 = read1.seq
@@ -82,6 +91,7 @@ class PEreadclass(object):
 	def addaln(self,i,j):
 		self.aln.append( (i,j) )
 
+# Covert a list of aligned pairs into a cigar string
 def alnpairs_to_cigarstring(pairs):
 	cigar = list()
 	last_pair = None
@@ -105,25 +115,31 @@ def alnpairs_to_cigarstring(pairs):
 		cigarstring += str(pair[1])+pair[0]
 	return cigarstring
 
+# Get reverse complement of a numpy array sequence	
 def rev_comp(seq_array):
 	revcompseq = 3 - seq_array[::-1]
 	revcompseq[revcompseq<0] = 4
 	return revcompseq
 
+# Convert sequences from numpy array to string.
 def array2seq(seq_array):
 	seq = ''
 	for letter in seq_array:
 		seq += 'ACGTN'[letter]
 	return seq
 
+# print the same file
 def write_sam(alignment_pickle,genome_profile_f,genome_profile_r,f_prob,r_prob):
 
 	alignments = pickle.load(open(alignment_pickle,'rb'))
 	
+	# For each read...
 	for read_id in alignments:
 		read = alignments[read_id]
 		if len(read.aln) == 0:
 			continue
+			
+		# Calculate probability of each candidate alignment
 		unnorm_p1 = numpy.zeros(len(read.alns1))
 		for i in range(len(read.alns1)):
 			aln1 = read.alns1[i]
@@ -152,6 +168,7 @@ def write_sam(alignment_pickle,genome_profile_f,genome_profile_r,f_prob,r_prob):
 		else:
 			continue
 		
+		# Take most likely alignment and get data need for sam format
 		i = numpy.argmax(marginal_p)
 		aln1 = read.alns1[read.aln[i][0]]
 		aln2 = read.alns2[read.aln[i][1]]
@@ -169,11 +186,14 @@ def write_sam(alignment_pickle,genome_profile_f,genome_profile_r,f_prob,r_prob):
 			oriented_seq2 = array2seq(read.seq2)
 		else:
 			oriented_seq2 = array2seq(rev_comp(read.seq2))
+		
+		# Print a sam line for each read end
 		print read_id +'\t'+ str(flag1) +'\t'+ aln1.chrom +'\t'+ str(min(aln1.aln_ref())+1) +'\t'+ str(mapq) +'\t'+ cigar1 +'\t'+ aln2.chrom +'\t'+ str(min(aln2.aln_ref())+1) +'\t'+ str(frag_length) +'\t'+ oriented_seq1 +'\t*'
 		print read_id +'\t'+ str(flag2) +'\t'+ aln2.chrom +'\t'+ str(min(aln2.aln_ref())+1) +'\t'+ str(mapq) +'\t'+ cigar1 +'\t'+ aln1.chrom +'\t'+ str(min(aln1.aln_ref())+1) +'\t'+ str(frag_length) +'\t'+ oriented_seq2 +'\t*' 
 	
 	return
 
+# Parse command line arguments
 def GetArgs():
 
 	def ParseArgs(parser):

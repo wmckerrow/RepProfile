@@ -17,6 +17,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RepProfile.  If not, see <http://www.gnu.org/licenses/>.
 
+
+"""
+
+"""
+
+This is the main RepProfile code. It takes alignments preprocessed from a bamfile by
+parse_PEbam_for_RepProfile.py and runs EM to estimate hyper-editing. Results are saved 
+in several pickle files. Text output can be generated from these by utilities/report.py.
+
 """
 
 import numpy
@@ -161,11 +170,14 @@ def EStep(input):
 	
 	#print 'starting E step part'
 	
-	alignment_pickle,reference,genome_profile_f,genome_profile_r,f_prob,r_prob = input
+	alignment_pickle,reference,genome_profile_f,genome_profile_r,f_prob,r_prob,flanking = input
 	alignments = pickle.load(open(alignment_pickle,'rb')).values()
 	ll = 0
-	expU_f = create_initial_guess(reference,numpy.array([0.0,0.0,0.0,0.0]))
-	expU_r = create_initial_guess(reference,numpy.array([0.0,0.0,0.0,0.0]))
+	expU_f = dict()
+	expU_r = dict()
+	for seq in reference:
+		expU_f[seq] = numpy.zeros((len(reference[seq])-2*flanking,4))
+		expU_r[seq] = numpy.zeros((len(reference[seq])-2*flanking,4))
 	alned_reads = 0
 	
 	for read in alignments:
@@ -216,14 +228,22 @@ def EStep(input):
 				continue
 			if max(aln2.aln_ref()) >= len(reference[aln2.chrom]):
 				continue
+			aln1_ref = numpy.array(aln1.aln_ref())
+			aln1_read = numpy.array(aln1.aln_read())
+			aln1_2write = numpy.logical_and(aln1_ref > flanking,aln1_ref<len(reference[aln1.chrom])-flanking)
+			aln1_ref -= flanking
+			aln2_ref = numpy.array(aln2.aln_ref())
+			aln2_read = numpy.array(aln2.aln_read())
+			aln2_2write = numpy.logical_and(aln2_ref > flanking,aln2_ref<len(reference[aln1.chrom])-flanking)
+			aln2_ref -= flanking
 			if aln1.forward:
-				expU_r[aln1.chrom][aln1.aln_ref(),read.seq1[aln1.aln_read()]] += marginal_p[i]
+				expU_r[aln1.chrom][aln1_ref[aln1_2write],read.seq1[aln1_read[aln1_2write]]] += marginal_p[i]
 			else:
-				expU_f[aln1.chrom][aln1.aln_ref(),rev_comp(read.seq1)[aln1.aln_read()]] += marginal_p[i]
+				expU_f[aln1.chrom][aln1_ref[aln1_2write],rev_comp(read.seq1)[aln1_read[aln1_2write]]] += marginal_p[i]
 			if aln2.forward:
-				expU_f[aln2.chrom][aln2.aln_ref(),read.seq2[aln2.aln_read()]] += marginal_p[i]
+				expU_f[aln2.chrom][aln2_ref[aln2_2write],read.seq2[aln2_read[aln2_2write]]] += marginal_p[i]
 			else:
-				expU_r[aln2.chrom][aln2.aln_ref(),rev_comp(read.seq2)[aln2.aln_read()]] += marginal_p[i]
+				expU_r[aln2.chrom][aln2_ref[aln2_2write],rev_comp(read.seq2)[aln2_read[aln2_2write]]] += marginal_p[i]
 				
 	#print 'Finished E step part'
 	
@@ -301,41 +321,51 @@ def nEMsteps(master_pool,numEM,alignment_pickles,reference,genome_profile_f,geno
 		
 	for count in range(numEM):
 		start = datetime.datetime.now()
-				
+		
+		Estart = datetime.datetime.now()
+		
 		inputs = []
 		for i in range(len(alignment_pickles)):
-			inputs.append((alignment_pickles[i],reference,genome_profile_f,genome_profile_r,f_prob,r_prob))
+			inputs.append((alignment_pickles[i],reference,genome_profile_f,genome_profile_r,f_prob,r_prob,flanking))
 		
 		ll = 0
-		expU_f = create_initial_guess(reference,numpy.array([0.0,0.0,0.0,0.0]))
-		expU_r = create_initial_guess(reference,numpy.array([0.0,0.0,0.0,0.0]))
+		expU_f = dict()
+		expU_r = dict()
+		for seq in reference:
+			expU_f[seq] = numpy.zeros((len(reference[seq]),4))
+			expU_r[seq] = numpy.zeros((len(reference[seq]),4))
 		alned_reads = 0
 		
 		# Divide up reads and send to separate processes for E step
 		for i in range(len(inputs)/threads):
 			EStep_outputs = master_pool.map(EStep, inputs[i*threads:(i+1)*threads])
+#			EStep_outputs = list(map(EStep, inputs[i*threads:(i+1)*threads]))
 			for EStep_output in EStep_outputs:
 				this_ll,this_alned_reads,this_expU_f,this_expU_r = EStep_output
 				ll += this_ll
 				alned_reads += this_alned_reads
 				for seq in reference:
-					expU_f[seq] += this_expU_f[seq]
-					expU_r[seq] += this_expU_r[seq]
+					expU_f[seq][flanking:-flanking] += this_expU_f[seq]
+					expU_r[seq][flanking:-flanking] += this_expU_r[seq]
 		
 		# Combine the output from each process		
 		EStep_outputs = master_pool.map(EStep, inputs[len(inputs)/threads*threads:])
+#		EStep_outputs = list(map(EStep, inputs[len(inputs)/threads*threads:]))
 		for EStep_output in EStep_outputs:
 			this_ll,this_alned_reads,this_expU_f,this_expU_r = EStep_output
 			ll += this_ll
 			alned_reads += this_alned_reads
 			for seq in reference:
-				expU_f[seq] += this_expU_f[seq]
-				expU_r[seq] += this_expU_r[seq]
+				expU_f[seq][flanking:-flanking] += this_expU_f[seq]
+				expU_r[seq][flanking:-flanking] += this_expU_r[seq]
 						
 #  		seq = 'FB4_DM_25'
 #  		for i in range(len(reference[seq])):
 #  			if reference[seq][i] == 0 and expU_f[seq][i,2] > 1:
 #  				print seq,i,expU_f[seq][i,]
+		
+#		print 'Estep',datetime.datetime.now()-Estart
+		Mstart = datetime.datetime.now()
 		
 		#print 'sending M steps'
 		
@@ -382,9 +412,12 @@ def nEMsteps(master_pool,numEM,alignment_pickles,reference,genome_profile_f,geno
 			else:
 				r_prob[seq] = 0.0
 		
+#		print 'Mstep',datetime.datetime.now()-Mstart
+		
 		print count,ll,alned_reads,datetime.datetime.now()-start
 	return genome_profile_f,genome_profile_r,f_prob,r_prob,rep_type,pos_type,expU_f,expU_r,ll
 
+# Read command line arguments
 def GetArgs():
 
 	def ParseArgs(parser):
@@ -409,9 +442,14 @@ def GetArgs():
 							help='Text file containing prior.')
 		parser.add_argument('-j', '--jumpSteps',
 							required=False,
-							default=0,
+							default=5,
 							type=int,
 							help='Number of EM steps for each jump. 0 means no jumping. Jumping is only implemented for the hyper editing prior. (0)')
+		parser.add_argument('-y', '--highlyConfidentOnly',
+							required=False,
+							default='False',
+							type=str,
+							help='With j>0, only loop predictions through once and report highly confident predictions.')
 		parser.add_argument('-n', '--numEM',
 							required=False,
 							default=10,
@@ -442,13 +480,18 @@ def GetArgs():
 	parser = argparse.ArgumentParser()
 	args = ParseArgs(parser)
 
-	return args.alignment_pickles_list, args.reference_file, args.prior_file, args.jumpSteps, args.numEM, args.coverage, args.initial_guess, args.flanking, args.threads
+	return args.alignment_pickles_list, args.reference_file, args.prior_file, args.jumpSteps, args.highlyConfidentOnly, args.numEM, args.coverage, args.initial_guess, args.flanking, args.threads
 	
 def main():
 	print ' '.join(sys.argv)
-	alignment_pickles_list, reference_file, prior_file, jumpSteps, numEM, coverage, initial_guess, flanking, threads = GetArgs()
+	alignment_pickles_list, reference_file, prior_file, jumpSteps, highlyConfidentOnly, numEM, coverage, initial_guess, flanking, threads = GetArgs()
 	master_pool = Pool(threads,maxtasksperchild=1)
 	
+	if highlyConfidentOnly[0].upper() == 'F':
+		highlyConfidentOnly = False
+	else:
+		highlyConfidentOnly = True
+		
 	# Candidate alignments from parse_PEbam_for_RepProfile.py
 	alignment_pickles = []
 	for line in open(alignment_pickles_list,'r'):
@@ -567,7 +610,9 @@ def main():
 	pickle.dump(pos_type,open('pos_type.pkl','wb'))
 		
 	rep_type_last_rotation = copy.copy(rep_type)
-		
+	
+	highlyConfident = list()
+	
 	# Jumping strategy
 	while flipped:
 		flipped = False
@@ -609,6 +654,9 @@ def main():
 			
 			print last_ll, ll, last_rep_type[flipseq] != rep_type[flipseq]
 			
+			if last_rep_type[flipseq] == rep_type[flipseq]:
+				highlyConfident.append(flipseq)
+			
 			# Keep the better estimate
 			if last_ll > ll:
 				genome_profile_f = last_genome_profile_f
@@ -635,7 +683,7 @@ def main():
 		
 		# Stop when no hyper-editing is flipped off
 		for seq in rep_type:
-			if rep_type[seq] != rep_type_last_rotation[seq]:
+			if rep_type[seq] != rep_type_last_rotation[seq] and not highlyConfidentOnly:
 				flipped=True
 		rep_type_last_rotation = copy.copy(rep_type)
 	
@@ -649,6 +697,8 @@ def main():
 		pickle.dump(r_prob,open('r_prob.pkl','wb'))
 		pickle.dump(rep_type,open('rep_type.pkl','wb'))
 		pickle.dump(pos_type,open('pos_type.pkl','wb'))
+		if highlyConfidentOnly:
+			print highlyConfident
 
 if __name__ == '__main__':
 	main()

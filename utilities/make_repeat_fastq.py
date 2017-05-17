@@ -19,11 +19,19 @@ along with RepProfile.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+"""
+
+Given a list of read ideas and a fastq file, make a new fastq file with only the reads
+listed.
+
+"""
+
 import gzip
 import argparse
 import sys
 from sets import Set
 
+# Read command line arguments
 def GetArgs():
 
 	def ParseArgs(parser):
@@ -64,13 +72,15 @@ def Main():
 		print 'Specify a read file with -f or -g. Use -h/--help for more information.'
 		exit()
 	
+	# Collect listed read ids as Set object.
 	read_ids = Set([])
-	
 	for list_of_read_ids in lists_of_read_ids.split(','):
 		for line in open(list_of_read_ids,'r'):
 			read_ids.add(line.strip())
 		
 	#print read_ids
+	
+	# Print lines corresponding to read ids in the list
 	
 	if fastq:
 		with open(fastq, 'r') as f:

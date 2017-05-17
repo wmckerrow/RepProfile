@@ -1,6 +1,6 @@
 """
 
-Copyright Wilson McKerrow, 2017
+Copyright Wilson McKerrow, William Thompson 2017
 
 This file is part of RepProfile.
 
@@ -16,6 +16,12 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with RepProfile.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
+
+"""
+
+Print unique read ids for reads that overlap a given repeat
 
 """
 
@@ -65,32 +71,24 @@ def ReadRepeatMaskerFile(repeat_file):
 			repeats.append( RepeatMasker(line.strip()) )
 	return repeats
 
+# iterate through repeats for each repeat, fetch any overlapping reads and save ids in a set object
 def MakeHoppelBam(repeats,samfile,id,flanking):
 	
-	read_ids = set([])
+	read_ids = Set([])
 	
-	# iterate through the sequences, then through the repeats
-	# for each Hoppel repeat, insert its sequence in the correct location
 	for repeat in repeats:
-		if id and not id in repeat.repName:
+		if id and id.upper() != repeat.repName[:len(id)].upper():
 			continue
 		for read in samfile.fetch(repeat.genoName,max(repeat.genoStart-flanking,0),repeat.genoEnd+flanking):
 			if not read.qname in read_ids:
 				read_ids.add(read.qname)
 	
+	# Print read ids
 	for read_id in read_ids:
 		print read_id
-					
+			
+# Read command line arguments		
 def GetArgs():
-	"""
-	GetArgs - read the command line
-	returns - a bam file name, a genome file name, and an output file name
-	bam file is required
-	genome file is optional and has a default
-	output file is option, if not given, output is written to stdout
-
-	typing python phiX.count.py will show the options
-	"""
 
 	def ParseArgs(parser):
 		class Parser(argparse.ArgumentParser):

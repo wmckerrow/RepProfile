@@ -1,6 +1,6 @@
 """
 
-Copyright Wilson McKerrow, 2017
+Copyright Wilson McKerrow, William Thompson 2017
 
 This file is part of RepProfile.
 
@@ -19,6 +19,12 @@ along with RepProfile.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+"""
+
+Extract sequences tagged as a particular repeat along with flanking sequence.
+
+"""
+
 import sys
 from Bio import SeqIO
 from Bio import Seq
@@ -29,7 +35,7 @@ import argparse
 
 class RepeatMasker(object):
 	"""
-	RepeatMasker - class for holding UCSC Repeatmasker records
+	RepeatMasker - class for holding Repeatmasker data as read from a bed file
 	"""
 	def __init__(self, rep_str):
 		rep_list = rep_str.split('\t')
@@ -65,14 +71,14 @@ def ReadRepeatMaskerFile(repeat_file):
 			  the values are a list of RepeatMasker objects
 	"""
 
-	repeats = []
+	repeats = list()
 
 	with open(repeat_file, 'r') as f:
-		f.readline()  # throw away header
 		for line in f:
 			repeats.append( RepeatMasker(line.strip()) )
 	return repeats
 	
+# Read command line arguments
 def GetArgs():
 
 	def ParseArgs(parser):
@@ -114,9 +120,10 @@ def Main():
 	
 	repeats = ReadRepeatMaskerFile(repeat_masker_bed)
 	
+	# If a repeat overlaps a previously stored repeat, merge them together. Otherwise record the interval the repeat + flanking sequence covers.
 	intervals = dict()
 	for repeat in repeats:
-		if repeat_name and repeat_name != repeat.repName:
+		if repeat_name and repeat_name.upper() != repeat.repName[:len(repeat_name)].upper():
 			continue
 		if not repeat.genoName in intervals:
 			intervals[repeat.genoName] = [(repeat.genoStart-flanking,repeat.genoEnd+flanking)]
@@ -133,10 +140,12 @@ def Main():
 			intervals[repeat.genoName].pop(i)
 		intervals[repeat.genoName].append((new_start,new_end))
 	
+	# Sort intervals
 	sorted_intervals = dict()
 	for seq in intervals:
 		sorted_intervals[seq] = sorted(intervals[seq], key=lambda pos: pos[0])
 	
+	# Print sequence in the recorded intervals
 	count = 0
 	for seq in sorted_intervals:
 		for interval in sorted_intervals[seq]:

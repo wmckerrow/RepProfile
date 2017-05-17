@@ -60,13 +60,21 @@ class readclass(object):
 # A candidate alignment
 class alnclass(object):
 	def __init__(self,chrom,ref_start,cigarstring,forward):
-		self.chrom = chrom
-		self.forward = forward
-		self.read_ranges,self.ref_ranges,self.insert_starts,self.insert_extends,self.del_starts,self.del_extends = cigarstring_2_pairs(cigarstring,ref_start)
-	def aln_read(self):
-		return numpy.array(list(chain.from_iterable([range(x[0],x[1]) for x in self.read_ranges])))
-	def aln_ref(self):
-		return numpy.array(list(chain.from_iterable([range(x[0],x[1]) for x in self.ref_ranges])))
+		self.chrom = chrom # repeat that the alignment is to
+		self.forward = forward # TRUE if the alignment is in the forward direction
+		self.read_ranges,self.ref_ranges,self.insert_starts,self.insert_extends,self.del_starts,self.del_extends = cigarstring_2_pairs(cigarstring,ref_start) # See main/parse_PEbam_for_RepProfile.py
+	def aln_read(self): # aligned positions int the read
+		result = []
+		for x in self.read_ranges:
+			result += range(x[0],x[1])
+		return result
+		#return numpy.array(list(chain.from_iterable([range(x[0],x[1]) for x in self.read_ranges])))
+	def aln_ref(self): # aligned positions in the reference. aln_ref()[i] is aligned to aln_read()[i]
+		result = []
+		for x in self.ref_ranges:
+			result += range(x[0],x[1])
+		return result
+		#return numpy.array(list(chain.from_iterable([range(x[0],x[1]) for x in self.ref_ranges])))
 		
 # Sequence (seq1,seq2) and alignments (aln1,aln2) for a paired end read		
 class PEreadclass(object):
@@ -166,14 +174,14 @@ def fasta_as_array(fasta_file):
 	
 # Check to see if the candidate alignment has few enough non A to G changes
 def check_alignments(read,ref,max_diff):
-	diffs = sum(read != ref)
-	edits = sum(numpy.logical_and(ref==0,read==2))
+	diffs = numpy.sum(read != ref)
+	edits = numpy.sum(numpy.logical_and(ref==0,read==2))
 	return diffs-edits <= max_diff
 
 # Number of A to G and non A to G changes
 def count_diffs(read,ref):
-	diffs = sum(read != ref)
-	edits = sum(numpy.logical_and(ref==0,read==2))
+	diffs = numpy.sum(read != ref)
+	edits = numpy.sum(numpy.logical_and(ref==0,read==2))
 	return edits,diffs-edits
 
 def rev_comp(seq_array):
@@ -262,8 +270,8 @@ def Main():
 			continue
 		if 'N' in str((readfq1,readfq2)[read.is_read2][read.qname].seq).upper():
 			continue
-		if numpy.mean(read.query_qualities) < qcutoff:
-			continue
+#		if numpy.mean(read.query_qualities) < qcutoff:
+#			continue
 			
 		if not read_id:
 			read_id = read.qname

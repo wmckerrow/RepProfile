@@ -27,7 +27,7 @@ import sys
 import random
 
 # HYPERPARAMETERS
-P_SNP = 0.01 # Probability of SNP at a given position
+P_SNP = 0.0 # Probability of SNP at a given position
 P_EDIT = 0.5 # Probability that an A(T) is edited if element is hyper edited
 P_ERROR = 0.001 # Probability of a given sequencing error (e.g. A->C)
 P_OPEN = 0.0 # Probability of opening a new indel. Not implemented.

@@ -19,6 +19,12 @@ along with RepProfile.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+"""
+
+Find and replace one character with another in sequence portion(s) of a fastq file.
+
+"""
+
 import sys
 
 file = open(sys.argv[1],'r')

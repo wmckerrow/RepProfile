@@ -61,6 +61,12 @@ If you are looking for hyper editing, utilities/make_candidate_alignments_genomi
 ## More details
 More information about how to run RepProfile can be found in manual (manual.md).
 
+## Wishlist
+These are changes that I hope to make
+1. Decrease memory usage for large sequences.
+2. Include a c extension to speed up the E step.
+3. I'm also working on a tool to learn the repeat genome for a particular individual/population: How to repeat sequences differ from the refenerence and what is the sequence of novel repeat insertions?
+
 ## Contact
 Questions? email Will McKerrow: wilson_mckerrow@brown.edu.
 

@@ -19,6 +19,12 @@ along with RepProfile.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+"""
+
+Find and replace one character with another in sequence portion(s) of a gunzipped fastq file.
+
+"""
+
 import sys
 import gzip
 
