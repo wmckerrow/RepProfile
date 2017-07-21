@@ -1,5 +1,5 @@
 # RepProfile
-RepProfile takes advantages of the depenedencies between read seqeunces to provide a more accurate alignment of paired end reads to repetitive sequence. If you use RepProfile in your research please cite our paper: <PAPER INFO>.
+RepProfile takes advantages of the depenedencies between read seqeunces to provide a more accurate alignment of paired end reads to repetitive sequence. If you use RepProfile in your research please cite our paper: [WH McKerrow, YA Savva, A Rezaei, R Reenan. Predicting RNA hyper-editing with a novel tool when unambiguous alignment is impossible. BMC Genomics. 2017](https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-017-3898-9).
 
 For an overview of the method used by RepProfile, see our paper:
 <PAPER INFO>
