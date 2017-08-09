@@ -20,8 +20,8 @@ bwa aln -t 8 -n 4 -l 25 -i 10 $ref.AGmasked $reads1.TCmasked >  AG.masked.R1.aln
 bwa aln -t 8 -n 4 -l 25 -i 10 $ref.AGmasked $reads2.AGmasked > AG.masked.R2.aln.sai
 bwa sampe $ref.AGmasked AG.masked.R1.aln.sai  AG.masked.R2.aln.sai $reads1.TCmasked $reads2.AGmasked > AG.masked.aln.sam
 samtools view -bS AG.masked.aln.sam > AG.masked.aln.bam
-bwa aln -t 8 -N -n 4 -l 25 -i 10 $ref.TCmasked $reads1.TCmasked > TC.masked.R1.aln.sai
-bwa aln -t 8 -N -n 4 -l 25 -i 10 $ref.TCmasked $reads2.AGmasked > TC.masked.R2.aln.sai
+bwa aln -t 8 -n 4 -l 25 -i 10 $ref.TCmasked $reads1.TCmasked > TC.masked.R1.aln.sai
+bwa aln -t 8 -n 4 -l 25 -i 10 $ref.TCmasked $reads2.AGmasked > TC.masked.R2.aln.sai
 bwa sampe $ref.TCmasked TC.masked.R1.aln.sai TC.masked.R2.aln.sai $reads1.TCmasked $reads2.AGmasked > TC.masked.aln.sam
 samtools view -bS TC.masked.aln.sam > TC.masked.aln.bam
 samtools merge -f masked.aln.unsort.bam AG.masked.aln.bam TC.masked.aln.bam
